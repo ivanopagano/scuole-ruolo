@@ -35,13 +35,18 @@ class SchoolLoading extends PlaySpec with Results {
       val noTag = "Roma"
       val single = "Denomina-<br>zione"
       val link = """<a href="index.php?p2=RM&amp;c=ROMA">ROMA</a>"""
-      val map = """VIA CAVOUR, 258 (<a target=\"_new\" href=\"http://maps.google.it/maps?q=VIA%20CAVOUR,%20258%2000184%20ROMA\">mappa</a>)"""
+      val map = """VIA CAVOUR, 258 (<a target="_new" href="http://maps.google.it/maps?q=VIA%20CAVOUR,%20258%2000184%20ROMA">mappa</a>)"""
 
-      Schools.stripInTags(noTag) must be(noTag)
-      Schools.stripInTags(single) must be("Denomina-zione")
-      Schools.stripInTags(link) must be("ROMA")
-      Schools.stripInTags(map) must be("VIA CAVOUR, 258 (mappa)")
+      Schools.removeInnerTags(noTag) must be(noTag)
+      Schools.removeInnerTags(single) must be("Denomina-zione")
+      Schools.removeInnerTags(link) must be("ROMA")
+      Schools.removeInnerTags(map) must be("VIA CAVOUR, 258 (mappa)")
 
+    }
+
+    "read a link from within a string value" in {
+      val map = """VIA CAVOUR, 258 (<a target="_new" href="http://maps.google.it/maps?q=VIA%20CAVOUR,%20258%2000184%20ROMA">mappa</a>)"""
+      Schools.readLink(map) must be("http://maps.google.it/maps?q=VIA%20CAVOUR,%20258%2000184%20ROMA")
     }
 
     "extract the school information from the raw page" in {
@@ -56,7 +61,7 @@ class SchoolLoading extends PlaySpec with Results {
       school.address must be("VIA CAVOUR, 258 (mappa)")
       school.city must be("ROMA")
       school.province must be("RM")
-      school.map must be("")
+      school.map must be("http://maps.google.it/maps?q=VIA%20CAVOUR,%20258%2000184%20ROMA")
     }
 
   }

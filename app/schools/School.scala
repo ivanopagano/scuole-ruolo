@@ -1,6 +1,7 @@
 package schools
 
 import net.ruippeixotog.scalascraper.browser.Browser
+import org.jsoup.nodes.Element
 import play.api.mvc.Result
 import play.api.mvc.Results._
 import play.api.http.Status._
@@ -29,7 +30,7 @@ object Schools {
           NotFound
       }
 
-  def stripInTags(s: String): String =
+  def removeInnerTags(s: String): String =
     if (s contains "<") {
       s.foldLeft(("", false)) {
         case ((content, false), '<') => (content, true)
@@ -39,12 +40,15 @@ object Schools {
       }._1
     } else s
 
+  def readLink(s: String) = {
+    val link = """http://[^"]+""".r
+    link.findFirstIn(s).getOrElse("")
+  }
 
   def readSchoolFromPage(html: String) = {
     import net.ruippeixotog.scalascraper.dsl.DSL._
     import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
     import net.ruippeixotog.scalascraper.dsl.DSL.Parse._
-    import org.jsoup.nodes.Element
 
     lazy val needed = Set(
       "Codice scuola",
@@ -64,14 +68,14 @@ object Schools {
     def cleanName(name: String) = if (name contains "Denomina-") "Denominazione" else name
 
     def cleanedField(v: Option[(String, String)]) = v map {
-      case (field, value) => (field, stripInTags(value))
+      case (field, value) => (field, removeInnerTags(value))
     }
 
     // read the page
     val dom = Browser().parseString(html)
 
     // extract all <tr> with interesting data
-    val rows = (dom >?> elementList("tr.scuola")).get
+    val rows: Seq[Element] = (dom >?> elementList("tr.scuola")).get
 
     // read each <tr> and extract a pair from the inner <td>s
     // options comes from unused fields
@@ -86,12 +90,17 @@ object Schools {
       .toMap
       .withDefaultValue("")
 
+    val mapLink = for {
+      tr <- rows
+      if tr.text() contains "Indirizzo"
+    } yield readLink(tr >> attr("href")("a"))
+
     School(
       code = fields("Codice scuola"),
       schoolType = fields("Tipo"),
       name = fields("Denominazione"),
       address = fields("Indirizzo"),
-      map = "",
+      map = mapLink.headOption.getOrElse(""),
       city = fields("Comune"),
       province = fields("Provincia")
     )
@@ -103,7 +112,7 @@ case class School(
   schoolType: String,
   name: String,
   address: String,
-  map: String = "",
+  map: String,
   city: String,
   province: String
 )
