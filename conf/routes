@@ -2,8 +2,11 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-# Home page
-# GET     /                           controllers.Application.index
+# individual school entries as json
+GET     /schools/:code              controllers.SchoolsController.school(code: String)
+
+# all schools listing
+GET     /schools                    controllers.SchoolsController.schools()
 
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)

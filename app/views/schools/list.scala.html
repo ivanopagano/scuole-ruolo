@@ -1,0 +1,20 @@
+@(list: List[_root_.schools.School])
+
+@main(title = "Elenco delle scuole") {
+
+    <article>
+        <section>
+            <table class="table table-striped">
+                <tbody>
+                @for(s <- list) {
+                    <tr>
+                        <td><a target="whereis" href="@s.map">@s.code - @s.name</a></td>
+                        <td>@s.city - @s.street</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </section>
+    </article>
+
+}

@@ -17,17 +17,14 @@ class SchoolLoading extends PlaySpec with Results {
     import play.api.libs.ws.ning._
     implicit val sslClient: WSClient = NingWSClient()
 
-    val result: Future[Result] = Schools.getPageForCode("RMIS013006")
+    val result: Future[String] = Schools.getPageForCode("RMIS013006")
 
     "recover the school data" in {
 
-      status(of = result) must be(OK)
-      header(header = "content-type", of = result) must be(Some("text/plain; charset=utf-8"))
+      val content = result.result(10.milliseconds)
 
-      val body = contentAsString(result)
-
-      body must startWith("<!DOCTYPE html>")
-      body must include("""<tr class="scuola">""")
+      content must startWith("<!DOCTYPE html>")
+      content must include("""<tr class="scuola">""")
 
     }
 

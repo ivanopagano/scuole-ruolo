@@ -2,6 +2,7 @@ package schools
 
 import net.ruippeixotog.scalascraper.browser.Browser
 import org.jsoup.nodes.Element
+import play.api.libs.json.{Json, Writes}
 import play.api.mvc.Result
 import play.api.mvc.Results._
 import play.api.http.Status._
@@ -16,18 +17,30 @@ object Schools {
 
   implicit val context = play.api.libs.concurrent.Execution.Implicits.defaultContext
 
+  implicit val schoolWrites = new Writes[School] {
+    def writes(s: School) = Json.obj(
+      "code" -> s.code,
+      "schoolType" -> s.schoolType,
+      "name" -> s.name,
+      "address" -> s.address,
+      "map" -> s.map,
+      "city" -> s.city,
+      "province" -> s.province
+    )
+  }
+
   private val base_url = "http://blia.it/scuola/index.php"
 
-  def getPageForCode(code: String)(implicit ws: WSClient): Future[Result] =
+  def getPageForCode(code: String)(implicit ws: WSClient): Future[String] =
     ws.url(base_url)
       .withQueryString("d" -> code)
       .get()
-      .map {
+      .flatMap {
         case res if res.status == OK =>
-          Ok(res.body)
+          Future(res.body)
         case res =>
           Logger.error(s"I didn't reach the url. Response has been $res")
-          NotFound
+          Future.failed(new Exception(s"I didn't reach the url. Response has been $res"))
       }
 
   def removeInnerTags(s: String): String =
@@ -115,4 +128,6 @@ case class School(
   map: String,
   city: String,
   province: String
-)
+) {
+  lazy val street = if (address endsWith "(mappa)") address.dropRight(7) else address
+}
