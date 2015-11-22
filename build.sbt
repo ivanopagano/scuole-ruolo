@@ -24,3 +24,11 @@ resolvers += "scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"
 // Play provides two styles of routers, one expects its actions to be injected, the
 // other, legacy style, accesses its actions statically.
 routesGenerator := InjectedRoutesGenerator
+
+herokuAppName in Compile := """scuole-ruolo"""
+
+herokuJdkVersion in Compile := "1.8"
+
+herokuProcessTypes in Compile := Map(
+  "web" ->  "target/universal/stage/bin/scuole-ruolo -Dhttp.port=$PORT"
+)
