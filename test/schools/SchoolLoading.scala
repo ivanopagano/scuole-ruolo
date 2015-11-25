@@ -5,7 +5,8 @@ import play.api.libs.ws.WSClient
 import play.api.mvc._
 import play.api.test.Helpers._
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 
 /**
   * Created by stitch on 21/11/15.
@@ -18,26 +19,13 @@ class SchoolLoading extends PlaySpec with Results {
     implicit val sslClient: WSClient = NingWSClient()
 
     val result: Future[String] = Schools.getPageForCode("RMIS013006")
+    val content = Await.result(result, 3.seconds)
 
     "recover the school data" in {
 
-      val content = result.result(10.milliseconds)
 
-      content must startWith("<!DOCTYPE html>")
-      content must include("""<tr class="scuola">""")
-
-    }
-
-    "clean any string containing html tags" in {
-      val noTag = "Roma"
-      val single = "Denomina-<br>zione"
-      val link = """<a href="index.php?p2=RM&amp;c=ROMA">ROMA</a>"""
-      val map = """VIA CAVOUR, 258 (<a target="_new" href="http://maps.google.it/maps?q=VIA%20CAVOUR,%20258%2000184%20ROMA">mappa</a>)"""
-
-      Schools.removeInnerTags(noTag) must be(noTag)
-      Schools.removeInnerTags(single) must be("Denomina-zione")
-      Schools.removeInnerTags(link) must be("ROMA")
-      Schools.removeInnerTags(map) must be("VIA CAVOUR, 258 (mappa)")
+      content.trim must startWith("<!DOCTYPE html>")
+      content must include("""<table class="sc-table" id="tabellaRisultati">""")
 
     }
 
@@ -47,18 +35,19 @@ class SchoolLoading extends PlaySpec with Results {
     }
 
     "extract the school information from the raw page" in {
+      val school: Option[School]= Parser.readSchoolFromPage(content)
 
-      val body = contentAsString(result)
-
-      val school: School = Schools.readSchoolFromPage(body)
-
-      school.code must be("RMIS013006")
-      school.name must be("LEONARDO DA VINCI")
+      school mustBe defined
+      school.get.code must be("RMIS013006")
+      school.get.name must be("LEONARDO DA VINCI")
+      school.get.link must be("""/cercalatuascuola/istituti/RMIS013006/leonardo-da-vinci/""")
+      school.get.address must be("VIA CAVOUR 258 ROMA, ROMA (RM)")
+      school.get.map mustBe empty
+      /*
       school.schoolType must be("SCUOLA SECONDARIA DI SECONDO GRADO STATALE")
-      school.address must be("VIA CAVOUR, 258 (mappa)")
       school.city must be("ROMA")
       school.province must be("RM")
-      school.map must be("http://maps.google.it/maps?q=VIA%20CAVOUR,%20258%2000184%20ROMA")
+      */
     }
 
   }

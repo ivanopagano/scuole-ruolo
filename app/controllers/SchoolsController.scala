@@ -2,7 +2,7 @@ package controllers
 
 import javax.inject.Inject
 import com.typesafe.config.ConfigFactory
-import schools.School
+import schools.{Parser, School}
 
 import scala.concurrent.Future
 import scala.collection.JavaConversions._
@@ -24,21 +24,24 @@ class SchoolsController @Inject() (ws: WSClient) extends Controller {
     * @return
     */
   def school(code: String) = Action.async {
-    val school: Future[School] = loadSchool(code)
-    school map (s => Ok(Json.toJson(s)))
-  }
-
-  def schools = Action.async {
-    val results: Future[List[School]]= Future.sequence(allCodes map loadSchool)
-    results map {
-      schoolList =>
-      Ok(views.html.schools.list(schoolList))
+    val school: Future[Option[School]] = loadSchool(code)
+    school map {
+      case Some(s) => Ok(Json.toJson(s))
+      case None    => NotFound
     }
   }
 
-  private def loadSchool(code: String): Future[School] = {
+  def schools = Action.async {
+    val results: Future[List[Option[School]]]= Future.sequence(allCodes map loadSchool)
+    results map {
+      schoolList =>
+      Ok(views.html.schools.list(schoolList.flatten))
+    }
+  }
+
+  private def loadSchool(code: String): Future[Option[School]] = {
     val page = getPageForCode(code)(ws)
-    val school = page map (readSchoolFromPage)
+    val school = page map (Parser.readSchoolFromPage)
     school
   }
 }

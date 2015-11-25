@@ -8,8 +8,8 @@
                 <tbody>
                 @for(s <- list) {
                     <tr>
-                        <td><a target="whereis" href="@s.map">@s.code - @s.name</a></td>
-                        <td>@s.city - @s.street</td>
+                        <td><a target="info" href="@s.link">@s.code - @s.name</a></td>
+                        <td><a target="map" href="@s.map">@s.address</a></td>
                     </tr>
                 }
                 </tbody>

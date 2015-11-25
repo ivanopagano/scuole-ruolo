@@ -1,13 +1,11 @@
 package schools
 
-import net.ruippeixotog.scalascraper.browser.Browser
-import org.jsoup.nodes.Element
-import play.api.libs.json.{Json, Writes}
-import play.api.mvc.Result
-import play.api.mvc.Results._
-import play.api.http.Status._
-import play.api.libs.ws.WSClient
+import com.typesafe.config.ConfigFactory
 import play.api.Logger
+import play.api.http.Status._
+import play.api.libs.json.{Json, Writes}
+import play.api.libs.ws.WSClient
+
 import scala.concurrent.Future
 
 /**
@@ -20,20 +18,18 @@ object Schools {
   implicit val schoolWrites = new Writes[School] {
     def writes(s: School) = Json.obj(
       "code" -> s.code,
-      "schoolType" -> s.schoolType,
       "name" -> s.name,
       "address" -> s.address,
       "map" -> s.map,
-      "city" -> s.city,
-      "province" -> s.province
+      "link" -> s.link
     )
   }
 
-  private val base_url = "http://blia.it/scuola/index.php"
+  private val base_url = ConfigFactory.load().getString("schools.search.url")
 
   def getPageForCode(code: String)(implicit ws: WSClient): Future[String] =
     ws.url(base_url)
-      .withQueryString("d" -> code)
+      .withQueryString("rapida" -> code, "tipoRicerca" -> "RAPIDA", "gidf" -> "1")
       .get()
       .flatMap {
         case res if res.status == OK =>
@@ -43,91 +39,17 @@ object Schools {
           Future.failed(new Exception(s"I didn't reach the url. Response has been $res"))
       }
 
-  def removeInnerTags(s: String): String =
-    if (s contains "<") {
-      s.foldLeft(("", false)) {
-        case ((content, false), '<') => (content, true)
-        case ((content, false), c) => (content + c, false)
-        case ((content, true), '>') => (content, false)
-        case ((content, true), _) => (content, true)
-      }._1
-    } else s
-
   def readLink(s: String) = {
     val link = """http://[^"]+""".r
     link.findFirstIn(s).getOrElse("")
   }
 
-  def readSchoolFromPage(html: String) = {
-    import net.ruippeixotog.scalascraper.dsl.DSL._
-    import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
-    import net.ruippeixotog.scalascraper.dsl.DSL.Parse._
-
-    lazy val needed = Set(
-      "Codice scuola",
-      "Tipo",
-      "Denominazione",
-      "Indirizzo",
-      "Comune",
-      "Provincia"
-    )
-
-    def readFieldRaw(content: Option[Seq[String]]) = for {
-      cs <- content
-      field = cleanName(cs.head)
-      if needed(field)
-    } yield (field, cs.tail.head)
-
-    def cleanName(name: String) = if (name contains "Denomina-") "Denominazione" else name
-
-    def cleanedField(v: Option[(String, String)]) = v map {
-      case (field, value) => (field, removeInnerTags(value))
-    }
-
-    // read the page
-    val dom = Browser().parseString(html)
-
-    // extract all <tr> with interesting data
-    val rows: Seq[Element] = (dom >?> elementList("tr.scuola")).get
-
-    // read each <tr> and extract a pair from the inner <td>s
-    // options comes from unused fields
-    val allPairs: Seq[Option[(String, String)]] = for {
-      tr <- rows
-      rawPairs = readFieldRaw(tr >?> texts("td"))
-    } yield (cleanedField(rawPairs))
-
-    val fields: Map[String, String] = allPairs
-      .filterNot(_ == None)
-      .map(_.get)
-      .toMap
-      .withDefaultValue("")
-
-    val mapLink = for {
-      tr <- rows
-      if tr.text() contains "Indirizzo"
-    } yield readLink(tr >> attr("href")("a"))
-
-    School(
-      code = fields("Codice scuola"),
-      schoolType = fields("Tipo"),
-      name = fields("Denominazione"),
-      address = fields("Indirizzo"),
-      map = mapLink.headOption.getOrElse(""),
-      city = fields("Comune"),
-      province = fields("Provincia")
-    )
-  }
 }
 
 case class School(
-  code: String,
-  schoolType: String,
-  name: String,
-  address: String,
-  map: String,
-  city: String,
-  province: String
-) {
-  lazy val street = if (address endsWith "(mappa)") address.dropRight(7) else address
-}
+  code: String = "",
+  name: String = "",
+  address: String = "",
+  map: String = "",
+  link: String = ""
+)
