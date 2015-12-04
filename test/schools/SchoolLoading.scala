@@ -1,16 +1,17 @@
+/**
+  * Created by Ivano Pagano on 21/11/15.
+  */
 package schools
+
+import org.scalatest._
 
 import org.scalatestplus.play._
 import play.api.libs.ws.WSClient
 import play.api.mvc._
-import play.api.test.Helpers._
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
-/**
-  * Created by stitch on 21/11/15.
-  */
 class SchoolLoading extends PlaySpec with Results {
 
   "the schools object" should {
@@ -40,7 +41,7 @@ class SchoolLoading extends PlaySpec with Results {
       school mustBe defined
       school.get.code must be("RMIS013006")
       school.get.name must be("LEONARDO DA VINCI")
-      school.get.link must be("""/cercalatuascuola/istituti/RMIS013006/leonardo-da-vinci/""")
+      school.get.link must be("""http://cercalatuascuola.istruzione.it/cercalatuascuola/istituti/RMIS013006/leonardo-da-vinci/""")
       school.get.address must be("VIA CAVOUR 258 ROMA, ROMA (RM)")
       school.get.map mustBe empty
       /*
@@ -53,3 +54,34 @@ class SchoolLoading extends PlaySpec with Results {
   }
 
 }
+
+class SchoolSorting extends WordSpec with Matchers {
+
+  "The school object" should {
+
+    "extract the city name from the address with cap" in {
+
+      val city = Schools cityFromAddress """VIA PAOLO BORSELLINO S.N.C., 00052 CERVETERI (RM)"""
+
+      city should be("CERVETERI")
+    }
+
+    "extract the city name from the address with no cap" in {
+
+      val city = Schools cityFromAddress """VIA CAVOUR 258 ROMA, ROMA (RM)"""
+
+      city should be("ROMA")
+    }
+
+    "extract a compund city name from the address" in {
+
+      val city = Schools cityFromAddress """VIA A. DE GASPERI, 8, 00018 PALOMBARA SABINA (RM)"""
+
+      city should be("PALOMBARA SABINA")
+    }
+
+  }
+
+}
+
+

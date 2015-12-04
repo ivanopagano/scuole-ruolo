@@ -1,3 +1,6 @@
+/**
+  * Created by Ivano Pagano on 21/11/15.
+  */
 package schools
 
 import com.typesafe.config.ConfigFactory
@@ -8,9 +11,6 @@ import play.api.libs.ws.WSClient
 
 import scala.concurrent.Future
 
-/**
-  * Created by stitch on 21/11/15.
-  */
 object Schools {
 
   implicit val context = play.api.libs.concurrent.Execution.Implicits.defaultContext
@@ -43,6 +43,15 @@ object Schools {
     val link = """http://[^"]+""".r
     link.findFirstIn(s).getOrElse("")
   }
+
+  def cityFromAddress(addr: String) = {
+    val re = """^.*(?:,|\d{5})([a-zA-Z\s]+)\s\(RM\)$""".r
+    (re findFirstMatchIn addr) map (_.group(1).trim) getOrElse ""
+  }
+
+  def sorting(schools: Seq[School]) = (schools sortBy {
+    s => (cityFromAddress (s.address), s.name)
+  }).toList
 
 }
 

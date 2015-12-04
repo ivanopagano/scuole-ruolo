@@ -5,11 +5,21 @@
     <article>
         <section>
             <table class="table table-striped">
+                @if(list.nonEmpty) {
+                <thead>
+                    <tr>
+                        <th>Codice</th>
+                        <th>Nome (premi per i dettagli)</th>
+                        <th>Indirizzo (premi per la mappa)</th>
+                    </tr>
+                </thead>
+                }
                 <tbody>
                 @for(s <- list) {
                     <tr>
-                        <td><a target="info" href="@s.link">@s.code - @s.name</a></td>
-                        <td><a target="map" href="@s.map">@s.address</a></td>
+                        <td>@s.code</td>
+                        <td><a target="info" href="@s.link">@s.name</a></td>
+                        <td>@s.address <a target="map" href="@s.map"><i class="fa fa-map-marker fa-2x fa-pull-left"></i></a></td>
                     </tr>
                 }
                 </tbody>

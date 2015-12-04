@@ -1,3 +1,6 @@
+/**
+  * Created by Ivano Pagano on 22/11/15.
+  */
 package schools
 
 import com.typesafe.config.ConfigFactory
@@ -8,9 +11,6 @@ import play.api.libs.ws.WSClient
 
 import scala.concurrent.Future
 
-/**
-  * Created by stitch on 22/11/15.
-  */
 object Parser {
 
   private lazy val baseUrl = ConfigFactory.load().getString("schools.home.url")

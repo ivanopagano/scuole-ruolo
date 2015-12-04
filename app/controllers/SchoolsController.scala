@@ -1,8 +1,11 @@
+/**
+  * Created by Ivano Pagano on 22/11/15.
+  */
 package controllers
 
 import javax.inject.Inject
 import com.typesafe.config.ConfigFactory
-import schools.{Parser, School}
+import schools.{Schools, Parser, School}
 
 import scala.concurrent.Future
 import scala.collection.JavaConversions._
@@ -11,9 +14,6 @@ import play.api.libs.ws._
 import play.api.libs.json._
 import schools.Schools._
 
-/**
-  * Created by stitch on 22/11/15.
-  */
 class SchoolsController @Inject() (ws: WSClient) extends Controller {
 
   lazy val allCodes: List[String] = ConfigFactory.load().getStringList("schools.codes").toList
@@ -35,7 +35,8 @@ class SchoolsController @Inject() (ws: WSClient) extends Controller {
     val results: Future[List[Option[School]]]= Future.sequence(allCodes map loadSchool)
     results map {
       schoolList =>
-      Ok(views.html.schools.list(schoolList.flatten))
+        val sorted = Schools sorting (schoolList.flatten)
+        Ok(views.html.schools.list(sorted))
     }
   }
 
